@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スケジュール管理アプリ</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #fafafa;
+    }
+    .nav-container {
+      width: 100%;
+      background-color: green;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+    }
+
+    .nav-container a {
+      text-decoration: none;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      display: block;
+      padding: 15px 20px;
+      text-align: center;
+    }
+
+    .nav-container button {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .nav-container button:hover {
+      background-color: red;
+    }
+    .header {
+      max-width: 600px;
+      margin: 20px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .calendar-container {
+      max-width: 700px;
+      margin: auto;
+      border: 3px solid #333;
+      padding: 10px;
+      background-color: #fff;
+      box-sizing: border-box;
+      display: inline-block;
+    }
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      border-collapse: collapse;
+      width: 100%;
+    }
+    .day, .weekday {
+      padding: 30px;
+      font-size: 20px;
+      border: 2px solid #333;
+      text-align: center;
+      cursor: pointer;
+    }
+    .weekday {
+      font-weight: bold;
+      background-color: #5dade2;
+      color: white;
+      cursor: default;
+    }
+    .highlight {
+      background-color: #ffd700 !important;
+    }
+    .schedule-container {
+      max-width: 500px;
+      margin: 20px auto;
+      text-align: left;
+      font-size: 18px;
+    }
+    .schedule-form {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav-container">
+    <button><a href="./schedule.html">カレンダー</a></button>
+    <button><a href="./okanekanri.html">家計簿</a></button>
+    <button><a href="./kadai.html">課題管理</a></button>
+  </nav>
+  <h1>スケジュール管理</h1>
+
+  <div class="header">
+    <button onclick="prevMonth()">&lt;</button>
+    <h2 id="monthYear"></h2>
+    <button onclick="nextMonth()">&gt;</button>
+  </div>
+  
+  <div class="schedule-container">
+    <h3>予定を追加</h3>
+    <form class="schedule-form" onsubmit="addLongTermSchedule(event)">
+      <input type="date" id="startDate" required>
+      <input type="date" id="endDate" required>
+      <input type="text" id="scheduleText" placeholder="予定を入力" required>
+      <button type="submit">追加</button>
+    </form>
+    <div id="scheduleList"></div>
+  </div>
+
+  <div class="calendar-container">
+    <div class="calendar" id="calendar"></div>
+  </div>
+
+  <script>
+    let currentDate = new Date();
+    let schedules = [];
+
+    function renderCalendar() {
+      const calendar = document.getElementById("calendar");
+      const monthYear = document.getElementById("monthYear");
+      calendar.innerHTML = "";
+
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      monthYear.innerText = `${year}年 ${month + 1}月`;
+
+      const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+      weekdays.forEach(day => {
+        const weekdayDiv = document.createElement("div");
+        weekdayDiv.classList.add("weekday");
+        weekdayDiv.innerText = day;
+        calendar.appendChild(weekdayDiv);
+      });
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      for (let i = 0; i < firstDay; i++) {
+        const emptyDiv = document.createElement("div");
+        emptyDiv.classList.add("day");
+        emptyDiv.style.visibility = "hidden";
+        calendar.appendChild(emptyDiv);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dayDiv = document.createElement("div");
+        dayDiv.classList.add("day");
+        dayDiv.innerText = day;
+        calendar.appendChild(dayDiv);
+      }
+
+      highlightSchedules();
+    }
+
+    function highlightSchedules() {
+      const days = document.querySelectorAll(".day");
+      days.forEach(day => day.classList.remove("highlight"));
+
+      schedules.forEach(schedule => {
+        const startDate = new Date(schedule.start);
+        const endDate = new Date(schedule.end);
+        if (startDate.getMonth() === currentDate.getMonth()) {
+          for (let i = startDate.getDate(); i <= endDate.getDate(); i++) {
+            const dayIndex = i + new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay() - 1;
+            if (days[dayIndex]) {
+              days[dayIndex].classList.add("highlight");
+            }
+          }
+        }
+      });
+    }
+
+    function addLongTermSchedule(event) {
+      event.preventDefault();
+      const startDate = document.getElementById("startDate").value;
+      const endDate = document.getElementById("endDate").value;
+      const text = document.getElementById("scheduleText").value;
+
+      if (new Date(startDate) > new Date(endDate)) {
+        alert("終了日は開始日より後にしてください。");
+        return;
+      }
+
+      schedules.push({ start: startDate, end: endDate, text });
+      updateScheduleList();
+      renderCalendar();
+    }
+
+    function updateScheduleList() {
+      const scheduleList = document.getElementById("scheduleList");
+      scheduleList.innerHTML = "";
+      schedules.forEach((schedule, index) => {
+        const scheduleItem = document.createElement("div");
+        scheduleItem.innerHTML = `${schedule.start} 〜 ${schedule.end}: ${schedule.text} 
+          <button onclick="deleteSchedule(${index})">削除</button>`;
+        scheduleList.appendChild(scheduleItem);
+      });
+    }
+
+    function deleteSchedule(index) {
+      schedules.splice(index, 1);
+      updateScheduleList();
+      renderCalendar();
+    }
+
+    function prevMonth() {
+      currentDate.setMonth(currentDate.getMonth() - 1);
+      renderCalendar();
+    }
+
+    function nextMonth() {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      renderCalendar();
+    }
+
+    renderCalendar();
+
+    function updateScheduleList() {
+      const scheduleList = document.getElementById("scheduleList");
+      scheduleList.innerHTML = "";
+      schedules.forEach((schedule, index) => {
+        const scheduleItem = document.createElement("div");
+        scheduleItem.innerHTML = `${schedule.start} 〜 ${schedule.end}: ${schedule.text} 
+          <button onclick="deleteSchedule(${index})">削除</button>`;
+        scheduleList.appendChild(scheduleItem);
+      });
+    }
+  </script>
+</body>
+</html>

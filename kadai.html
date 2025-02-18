@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>課題管理アプリ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+        }
+
+        .nav-container {
+      width: 100%;
+      background-color: green;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+    }
+
+    .nav-container a {
+      text-decoration: none;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      display: block;
+      padding: 15px 20px;
+      text-align: center;
+    }
+
+    .nav-container button {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .nav-container button:hover {
+      background-color: red;
+    }
+
+        h1 {
+            color: black;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .container {
+            width: 60%;
+            margin: 50px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .task-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            padding: 10px;
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f8f9fa;
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+            padding: 5px 10px;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+
+        /* 期限が近い課題の強調 */
+        .warning {
+            background-color: yellow;
+        }
+
+        .danger {
+            background-color: red;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav-container">
+        <button><a href="./schedule.html">カレンダー</a></button>
+        <button><a href="./okanekanri.html">家計簿</a></button>
+        <button><a href="./kadai.html">課題管理</a></button>
+      </nav>
+    <h1>課題管理アプリ</h1>
+    <div class="container">
+        
+        <div class="task-form">
+            <input type="text" id="taskName" placeholder="課題名を入力（必須）">
+            <input type="text" id="subject" placeholder="教科名を入力（任意）">
+            <input type="datetime-local" id="deadline">
+            <input type="text" id="submissionPlace" placeholder="提出場所を入力（必須）">
+            <button id="addTaskBtn">追加</button>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>課題名</th>
+                    <th>教科</th>
+                    <th>期限</th>
+                    <th>提出場所</th>
+                    <th>削除</th>
+                </tr>
+            </thead>
+            <tbody id="taskTableBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", loadTasks);
+
+        const taskNameInput = document.getElementById("taskName");
+        const subjectInput = document.getElementById("subject");
+        const deadlineInput = document.getElementById("deadline");
+        const submissionPlaceInput = document.getElementById("submissionPlace");
+        const addTaskBtn = document.getElementById("addTaskBtn");
+        const taskTableBody = document.getElementById("taskTableBody");
+
+        addTaskBtn.addEventListener("click", addTask);
+
+        function addTask() {
+            const taskName = taskNameInput.value.trim();
+            let subject = subjectInput.value.trim();
+            const deadline = deadlineInput.value;
+            const submissionPlace = submissionPlaceInput.value.trim();
+
+            if (taskName === "" || deadline === "" || submissionPlace === "") {
+                alert("課題名・期限・提出場所は必須です");
+                return;
+            }
+
+            if (subject === "") {
+                subject = "未設定"; // 教科名が空なら「未設定」と表示
+            }
+
+            const task = {
+                id: Date.now(),
+                taskName,
+                subject,
+                deadline,
+                submissionPlace
+            };
+
+            saveTask(task);
+            renderTask(task);
+
+            taskNameInput.value = "";
+            subjectInput.value = "";
+            deadlineInput.value = "";
+            submissionPlaceInput.value = "";
+        }
+
+        function renderTask(task) {
+            const tr = document.createElement("tr");
+            tr.dataset.id = task.id;
+
+            tr.innerHTML = `
+                <td>${task.taskName}</td>
+                <td>${task.subject}</td>
+                <td>${task.deadline}</td>
+                <td>${task.submissionPlace}</td>
+                <td><button class="delete-btn">削除</button></td>
+            `;
+
+            applyDeadlineHighlight(tr, task.deadline);
+
+            tr.querySelector(".delete-btn").addEventListener("click", deleteTask);
+            taskTableBody.appendChild(tr);
+        }
+
+        function applyDeadlineHighlight(tr, deadline) {
+            const now = new Date();
+            const dueDate = new Date(deadline);
+            const diffDays = Math.floor((dueDate - now) / (1000 * 60 * 60 * 24));
+
+            if (diffDays <= 3) {
+                tr.classList.add("danger"); // 3日前 → 赤色
+            } else if (diffDays <= 5) {
+                tr.classList.add("warning"); // 5日前 → 黄色
+            }
+        }
+
+        function saveTask(task) {
+            let tasks = getTasks();
+            tasks.push(task);
+            localStorage.setItem("tasks", JSON.stringify(tasks));
+        }
+
+        function getTasks() {
+            return JSON.parse(localStorage.getItem("tasks")) || [];
+        }
+
+        function loadTasks() {
+            const tasks = getTasks();
+            tasks.forEach(task => renderTask(task));
+        }
+
+        function deleteTask(event) {
+            const taskId = event.target.parentElement.parentElement.dataset.id;
+            let tasks = getTasks();
+            tasks = tasks.filter(task => task.id != taskId);
+
+            localStorage.setItem("tasks", JSON.stringify(tasks));
+            event.target.parentElement.parentElement.remove();
+        }
+    </script>
+</body>
+</html>
