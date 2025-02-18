@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>家計簿</title>
+  <style>
+    .nav-container {
+      width: 100%;
+      background-color: green;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+    }
+
+    .nav-container a {
+      text-decoration: none;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      display: block;
+      padding: 15px 20px;
+      text-align: center;
+    }
+
+    .nav-container button {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .nav-container button:hover {
+      background-color: red;
+    }
+    /* h1, h2 のスタイル設定 */
+    h1 {
+      font-size: 2.5em;
+      color: #333;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    h2 {
+      font-size: 2em;
+      color: white;
+      background-color: #5dade2;
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 5px;
+      margin-top: 30px;
+      margin-bottom: 15px;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+    form {
+      background-color: #fff;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    label {
+      display: inline-block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select {
+      padding: 5px;
+      margin: 5px 0 10px 0;
+      width: calc(100% - 12px);
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+    }
+    input[type="submit"] {
+      padding: 8px 16px;
+      background-color: #007BFF;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    input[type="submit"]:hover {
+      background-color: #0056b3;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #fff;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    /* 削除ボタンのスタイル */
+    .delete-btn {
+      padding: 4px 8px;
+      background-color: #ff4d4d;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .delete-btn:hover {
+      background-color: #ff1a1a;
+    }
+    /* 円グラフは中央配置、真円になるよう HTML 属性で指定 */
+    #expenseChart {
+      display: block;
+      margin: 20px auto;
+    }
+  </style>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <nav class="nav-container">
+    <button><a href="./schedule.html">カレンダー</a></button>
+    <button><a href="./okanekanri.html">家計簿</a></button>
+    <button><a href="./kadai.html">課題管理</a></button>
+  </nav>
+  <h1>家計簿</h1>
+
+  <!-- 目標入力用フォーム -->
+  <h2>目標</h2>
+  <form id="goalForm">
+    <label for="goalInput">目標を入力：</label>
+    <input type="text" id="goalInput" name="content" placeholder="目標を入力">
+    <input type="submit" value="送信">
+  </form>
+  <h1 id="output"></h1>
+  <hr>
+
+  <!-- 収入・支出入力用フォーム -->
+  <h2>今月の収入・支出</h2>
+  <form id="incomeExpenseForm">
+    <div id="q1">
+      <label>
+        <input type="radio" name="transactionType" value="収入" required> 収入
+      </label>
+      <label>
+        <input type="radio" name="transactionType" value="支出" required> 支出
+      </label>
+    </div>
+
+    <!-- 日付入力（input type="date"） -->
+    <h3>日付</h3>
+    <input type="date" id="dateInput" required>
+    
+    <label for="q2">カテゴリ：</label>
+    <select id="q2" name="category">
+      <option value="飲食">飲食</option>
+      <option value="交通費">交通費</option>
+      <option value="通信">通信</option>
+      <option value="光熱費">光熱費</option>
+      <option value="住居費">住居費</option>
+      <option value="娯楽">娯楽</option>
+      <option value="日用品">日用品</option>
+      <option value="その他">その他</option>
+    </select>
+    <br>
+
+    <h3>金額</h3>
+    <label for="kin">金額：</label>
+    <input type="number" id="kin" placeholder="金額を入力" required> 円
+
+    <h3>メモ</h3>
+    <label for="memo">メモ：</label>
+    <input type="text" id="memo" placeholder="メモを入力">
+    <br>
+
+    <input type="submit" value="追加">
+  </form>
+
+  <!-- 登録済みの収入・支出を表示するテーブル -->
+  <h2>登録済みの収入・支出</h2>
+  <table id="transactionTable">
+    <thead>
+      <tr>
+        <th>取引タイプ</th>
+        <th>日付</th>
+        <th>カテゴリ</th>
+        <th>金額</th>
+        <th>メモ</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- ここにデータが追加されます -->
+    </tbody>
+  </table>
+
+  <!-- 支出のカテゴリごとの円グラフ -->
+  <h2>支出のカテゴリ別円グラフ</h2>
+  <div style="display: flex; justify-content: center;">
+    <canvas id="expenseChart" width="400" height="400"></canvas>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    window.addEventListener("load", function() {
+      const storedGoal = localStorage.getItem("goal");
+      if (storedGoal) {
+        document.getElementById("output").textContent = storedGoal;
+      }
+    });
+
+    // goalForm の送信イベント
+    document.getElementById("goalForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const goal = document.getElementById("goalInput").value;
+      localStorage.setItem("goal", goal);
+      document.getElementById("output").textContent = goal;
+      this.reset();
+    });
+    // カテゴリ一覧
+    const categories = ["飲食", "交通費", "通信", "光熱費", "住居費", "娯楽", "日用品", "その他"];
+    // 各カテゴリの支出合計を保持
+    let expenseSums = {};
+    categories.forEach(cat => expenseSums[cat] = 0);
+
+    // 取引データを保持する配列（ローカルストレージ保存）
+    let transactions = [];
+
+    // ローカルストレージに保存
+    function saveTransactions() {
+      localStorage.setItem("transactions", JSON.stringify(transactions));
+    }
+
+    // ローカルストレージから読み込み
+    function loadTransactions() {
+      const stored = localStorage.getItem("transactions");
+      if (stored) {
+        transactions = JSON.parse(stored);
+      }
+    }
+
+    // UI（テーブルと円グラフ）の更新
+    function updateUI() {
+      const tbody = document.getElementById('transactionTable').querySelector('tbody');
+      tbody.innerHTML = "";
+      // 支出集計リセット
+      categories.forEach(cat => expenseSums[cat] = 0);
+
+      // transactions 配列を index 付きでループ
+      transactions.forEach((tr, index) => {
+        const trElem = document.createElement('tr');
+        trElem.innerHTML = `
+          <td>${tr.transactionType}</td>
+          <td>${tr.date}</td>
+          <td>${tr.category}</td>
+          <td>${tr.amount}円</td>
+          <td>${tr.memo}</td>
+          <td><button class="delete-btn" onclick="deleteTransaction(${index})">削除</button></td>
+        `;
+        tbody.appendChild(trElem);
+
+        if (tr.transactionType === "支出") {
+          expenseSums[tr.category] += parseFloat(tr.amount);
+        }
+      });
+
+      // 円グラフのデータ更新
+      expenseChart.data.datasets[0].data = categories.map(cat => expenseSums[cat]);
+      expenseChart.update();
+    }
+
+    // 削除ボタンが押された時の処理
+    function deleteTransaction(index) {
+      // 配列から該当取引を削除
+      transactions.splice(index, 1);
+      // 削除後のデータを保存しUI更新
+      saveTransactions();
+      updateUI();
+    }
+
+    // Chart.js を使って円グラフを初期化
+    const ctx = document.getElementById('expenseChart').getContext('2d');
+    const expenseChart = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: categories,
+        datasets: [{
+          label: '支出',
+          data: categories.map(cat => expenseSums[cat]),
+          backgroundColor: [
+            '#FF6384', '#36A2EB', '#FFCE56', '#8AFF33',
+            '#FF33F6', '#33FFF3', '#335BFF', '#FF8633'
+          ],
+          borderColor: '#fff',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              font: {
+                size: 16,
+                family: 'Arial'
+              },
+              color: '#000'
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.parsed;
+                return label + ': ' + value + '円';
+              }
+            },
+            titleFont: { size: 16, family: 'Arial' },
+            bodyFont: { size: 16, family: 'Arial' }
+          }
+        }
+      }
+    });
+
+    // ページ読み込み時にローカルストレージからデータを復元しUI更新
+    loadTransactions();
+    updateUI();
+
+    // 収入・支出フォームの送信処理
+    document.getElementById('incomeExpenseForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      // 日付入力値の取得と日本語表記への変換
+      const dateValue = document.getElementById('dateInput').value;
+      const dateObj = new Date(dateValue);
+      const formattedDate = `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月${dateObj.getDate()}日`;
+
+      const transactionType = document.querySelector('input[name="transactionType"]:checked').value;
+      const category = document.getElementById('q2').value;
+      const amount = parseFloat(document.getElementById('kin').value) || 0;
+      const memo = document.getElementById('memo').value;
+
+      const transaction = {
+        transactionType: transactionType,
+        date: formattedDate,
+        category: category,
+        amount: amount,
+        memo: memo
+      };
+
+      // 取引データを配列に追加、保存、UI更新
+      transactions.push(transaction);
+      saveTransactions();
+      updateUI();
+
+      this.reset();
+    });
+  </script>
+</body>
+</html>
