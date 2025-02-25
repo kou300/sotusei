@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スケジュール管理アプリ</title>
+<style>
+    h1 {
+      font-size: 2.5em;
+      color: black;
+        position: absolute;
+        top: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        text-align: center;
+        margin: 0;
+    }
+    body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: rgb(148, 219, 247);
+    }
+    .nav-container {
+        display: flex;
+        flex-direction: column;
+        gap: 50px;
+        width: 100%;
+        max-width: 300px;
+    }
+    .nav-container button {
+        width: 100%;
+        padding: 20px;
+        font-size: 18px;
+        border: none;
+        background-color: green;
+        color: white;
+        border-radius: 10px;
+        border-radius: 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    .nav-container button:hover {
+        background-color: red;
+    }
+    .nav-container a {
+        text-decoration: none;
+        color: white;
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+    .nav-container img {
+            width: 35px;
+            height: 35px;
+        }
+</style>
+</head>
+<body>
+    <h1>スケジュール管理アプリ</h1>
+    <nav class="nav-container">
+        <button>
+            <img src="calender.png" alt="カレンダー">
+            <a href="./schedule.html">カレンダー</a>
+        </button>
+        <button>
+            <img src="money.png" alt="家計簿">
+            <a href="./okanekanri.html">家計簿</a>
+        </button>
+        <button>
+            <img src="kadai.png" alt="課題管理">
+            <a href="./kadai.html">課題管理</a>
+        </button>
+    </nav>
+</body>
+</html>
